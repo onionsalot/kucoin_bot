@@ -1,0 +1,8 @@
+main.py
+setup.py
+kucoin.egg-info/PKG-INFO
+kucoin.egg-info/SOURCES.txt
+kucoin.egg-info/dependency_links.txt
+kucoin.egg-info/entry_points.txt
+kucoin.egg-info/requires.txt
+kucoin.egg-info/top_level.txt
