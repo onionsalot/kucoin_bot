@@ -134,15 +134,15 @@ def main():
     bleh {sell_order}
     """
 
-    loop.run_until_complete(kucoin_socket())
+    loop.run_until_complete(kucoin_socket(bought_price))
     print('AFTER KUCOIN SOCKETS BACK TO MAIN =>')
 
 
-async def kucoin_socket():
+async def kucoin_socket(bought_price):
 
     async def handle_evt(msg):
         if msg['topic'] == '/market/ticker:BTC-USDT':
-            print(f'got BTC-USDT: {msg["data"]}')
+            print(f'{time_display.current_time()} Current price of BTC-USDT: ( {time_display.current_percent(bought_price, msg["data"]["price"])} % ) {msg["data"]["price"]}', end='\r', flush=True)
         
     ksm = await KucoinSocketManager.create(loop, client, handle_evt)
     await ksm.subscribe('/market/ticker:BTC-USDT')
