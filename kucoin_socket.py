@@ -40,8 +40,12 @@ async def main(loop, order, bought_price):
             print('Close Kucoin and Pynput connection')
             return False
         
-        if key == Key.tab:
-            sell_order = new_sell(client, int(float(bought_price) + (float(bought_price) * 3)), order['dealSize'])
+        if key == Key.space:
+            try:
+                print('alphanumeric key {0} pressed'.format(key.char))
+            except AttributeError:
+                print('special key {0} pressed'.format(key))
+                sell_order = new_sell(client, int(float(bought_price) + (float(bought_price) * 3)), order['dealSize'])
 
 
     # Collect events until released
@@ -86,13 +90,17 @@ async def main(loop, order, bought_price):
     # # Account balance - must be authenticated
     # await ksm_private.subscribe('/account/balance')
     print('return from subscribe')
-    while looper:
-        if looper['loop'] == False:
-            print('bloop')
-            return
-        await asyncio.sleep(1, loop=loop)
+    # while looper['loop']:
+    #     await asyncio.sleep(1, loop=loop)
+    i=0
+    while i == 0:
+        print("sleeping to keep loop open")
+        i += 1
+        await asyncio.sleep(10, loop=loop)
 
 
 def print_loop(order, bought_price):
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(main(loop, order, bought_price), return_exceptions=False))
+    tasks = asyncio.gather(main(loop, order, bought_price), return_exceptions=True)
+    loop.run_until_complete(tasks)
+    return True

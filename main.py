@@ -5,18 +5,33 @@ import hmac
 import requests
 import hashlib
 import datetime
+import asyncio
 from kucoin.client import Client
+from kucoin.asyncio import KucoinSocketManager
 import time_display
 import json
-import kucoin_socket
 import concurrent.futures
 import threading
 import queue
 
-
-
+# //=== V A R   S E T U P ===//
 with open('config.json') as file:
     config = json.load(file)
+api_key = config['api_key']
+api_secret = config['api_secret']
+api_passphrase = config['api_passphrase']
+mode = config['fetch_mode']
+pairing = config['pairing']
+take_profit = int(config['take_profit_percentage'])
+buy_percentage = int(config['amount_to_use_percentage'])
+discord_token = config['discord_token']
+discord_channel = config['discord_channel']
+
+# //=== S E T U P   C L I E N T ===//
+url = 'https://openapi-sandbox.kucoin.com/api/v1/accounts'
+client = Client(api_key, api_secret, api_passphrase, {"verify": False, "timeout": 20})
+loop = asyncio.get_event_loop()
+
 
 def new_sell(client, sell_price, sell_size):
     res = client.cancel_all_orders( "" )
@@ -28,7 +43,7 @@ def new_sell(client, sell_price, sell_size):
         else:
             break
     return order
-            
+
 
 def new_thread(client, q):
     order_id = client.create_market_order('BTC-USDT', Client.SIDE_BUY, funds=5)
@@ -36,21 +51,6 @@ def new_thread(client, q):
     print(order_id)
 
 def main():
-    # //=== V A R   S E T U P ===//
-    api_key = config['api_key']
-    api_secret = config['api_secret']
-    api_passphrase = config['api_passphrase']
-    mode = config['fetch_mode']
-    pairing = config['pairing']
-    take_profit = int(config['take_profit_percentage'])
-    buy_percentage = int(config['amount_to_use_percentage'])
-    discord_token = config['discord_token']
-    discord_channel = config['discord_channel']
-
-    # //=== S E T U P   C L I E N T ===//
-    url = 'https://openapi-sandbox.kucoin.com/api/v1/accounts'
-    client = Client(api_key, api_secret, api_passphrase, {"verify": False, "timeout": 20})
-
     for account in client.get_accounts():
         if account['type'] == 'main' and account['currency'] == pairing:
             main = account
@@ -134,5 +134,24 @@ def main():
     bleh {sell_order}
     """
 
-    kucoin_socket.print_loop(order, bought_price)
-    print('AFTER KUCOIN SOCKETS BACK TO MAIN')
+    loop.run_until_complete(kucoin_socket())
+    print('AFTER KUCOIN SOCKETS BACK TO MAIN =>')
+
+
+async def kucoin_socket():
+
+    async def handle_evt(msg):
+        if msg['topic'] == '/market/ticker:BTC-USDT':
+            print(f'got BTC-USDT: {msg["data"]}')
+        
+    ksm = await KucoinSocketManager.create(loop, client, handle_evt)
+    await ksm.subscribe('/market/ticker:BTC-USDT')
+
+    i=0
+    while i == 0:
+        print("sleeping to keep loop open")
+        i= 1
+        await asyncio.sleep(10, loop=loop)
+    
+    await ksm.unsubscribe('/market/ticker:BTC-USDT')
+    print('after')          
